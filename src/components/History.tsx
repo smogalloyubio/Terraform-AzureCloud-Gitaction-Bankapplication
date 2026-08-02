@@ -123,27 +123,27 @@ export default function History({ user, accounts, activeAccount }: HistoryProps)
       </div>
 
       {/* Filter and Search controls */}
-      <div className="bg-white p-6 rounded-2xl border border-[#E9ECEF] grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+      <div className="bg-white p-6 rounded-2xl border border-zinc-200 grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
         
         {/* Search */}
         <div className="md:col-span-5 relative">
-          <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+          <Search className="absolute left-3 top-2.5 w-4 h-4 text-zinc-400" />
           <input
             type="text"
             placeholder="Search by amount, ID, or description..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 text-xs bg-[#F8F9FB] border border-[#E9ECEF] rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:bg-white"
+            className="w-full pl-9 pr-3 py-2 text-xs bg-zinc-50 border border-zinc-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-yellow-400 focus:bg-white"
           />
         </div>
 
         {/* Type Filter */}
         <div className="md:col-span-3 flex items-center gap-2">
-          <Filter className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+          <Filter className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
           <select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
-            className="w-full px-2 py-2 text-xs bg-[#F8F9FB] border border-[#E9ECEF] rounded-lg focus:outline-none"
+            className="w-full px-2 py-2 text-xs bg-zinc-50 border border-zinc-200 rounded-lg focus:outline-none"
           >
             <option value="ALL">All Transaction Types</option>
             <option value="DEPOSIT">Direct Deposits</option>
@@ -157,7 +157,7 @@ export default function History({ user, accounts, activeAccount }: HistoryProps)
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="w-full px-2 py-2 text-xs bg-[#F8F9FB] border border-[#E9ECEF] rounded-lg focus:outline-none"
+            className="w-full px-2 py-2 text-xs bg-zinc-50 border border-zinc-200 rounded-lg focus:outline-none"
           >
             <option value="ALL">All Settlement Statuses</option>
             <option value="SUCCESS">Success</option>
@@ -166,7 +166,7 @@ export default function History({ user, accounts, activeAccount }: HistoryProps)
         </div>
 
         {/* Counter Display */}
-        <div className="md:col-span-1 text-right text-xs text-gray-400 font-semibold">
+        <div className="md:col-span-1 text-right text-xs text-zinc-400 font-semibold">
           {filteredTransactions.length} items
         </div>
 

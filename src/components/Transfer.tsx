@@ -96,14 +96,14 @@ export default function Transfer({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         
         {/* Left Column: Transfer Form (Span 7) */}
-        <div className="lg:col-span-7 bg-white rounded-2xl border border-[#E9ECEF] p-8 space-y-6">
-          <div className="flex items-center gap-2 pb-4 border-b border-[#E9ECEF]">
-            <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
+        <div className="lg:col-span-7 bg-white rounded-2xl border border-zinc-200 p-8 space-y-6">
+          <div className="flex items-center gap-2 pb-4 border-b border-zinc-200">
+            <div className="p-2 bg-yellow-100 text-yellow-600 rounded-lg">
               <ArrowLeftRight className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-sm font-semibold text-gray-900 uppercase">Transfer Parameters</h2>
-              <p className="text-xs text-gray-400">Funds are verified and wired instantly</p>
+              <h2 className="text-sm font-semibold text-zinc-900 uppercase">Transfer Parameters</h2>
+              <p className="text-xs text-zinc-400">Funds are verified and wired instantly</p>
             </div>
           </div>
 
@@ -130,11 +130,11 @@ export default function Transfer({
             
             {/* From Account Selector */}
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-gray-700">Source Account (Debit Target)</label>
+              <label className="text-xs font-semibold text-zinc-700">Source Account (Debit Target)</label>
               <select
                 value={sourceAccountId}
                 onChange={(e) => setSourceAccountId(e.target.value)}
-                className="w-full px-3 py-2 text-sm bg-white border border-[#E9ECEF] rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 text-sm bg-white border border-zinc-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-yellow-400 focus:border-transparent"
               >
                 {accounts.map((acc) => (
                   <option key={acc.id} value={acc.id}>
@@ -146,23 +146,23 @@ export default function Transfer({
 
             {/* Target Account Input */}
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-gray-700">Receiver Account Number</label>
+              <label className="text-xs font-semibold text-zinc-700">Receiver Account Number</label>
               <input
                 type="text"
                 required
                 placeholder="SB-XXXXXXXXX"
                 value={receiverAccountNumber}
                 onChange={(e) => setReceiverAccountNumber(e.target.value)}
-                className="w-full px-3 py-2 text-sm bg-white border border-[#E9ECEF] rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent font-mono"
+                className="w-full px-3 py-2 text-sm bg-white border border-zinc-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-yellow-400 focus:border-transparent font-mono"
               />
-              <p className="text-[10px] text-gray-400">Must be a valid SimpleBank routing account identifier starting with "SB-".</p>
+              <p className="text-[10px] text-zinc-400">Must be a valid SimpleBank routing account identifier starting with "SB-".</p>
             </div>
 
             {/* Amount Input */}
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-gray-700">Transfer Amount (USD)</label>
+              <label className="text-xs font-semibold text-zinc-700">Transfer Amount (USD)</label>
               <div className="relative">
-                <span className="absolute left-3 top-2.5 text-gray-400 text-sm font-semibold">$</span>
+                <span className="absolute left-3 top-2.5 text-zinc-400 text-sm font-semibold">$</span>
                 <input
                   type="number"
                   step="0.01"
@@ -171,11 +171,11 @@ export default function Transfer({
                   placeholder="0.00"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  className="w-full pl-7 pr-3 py-2 text-sm bg-white border border-[#E9ECEF] rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent font-semibold text-gray-900"
+                  className="w-full pl-7 pr-3 py-2 text-sm bg-white border border-zinc-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-yellow-400 focus:border-transparent font-semibold text-zinc-900"
                 />
               </div>
               {selectedSourceAccount && (
-                <div className="flex justify-between items-center text-[10px] text-gray-500 pt-0.5">
+                <div className="flex justify-between items-center text-[10px] text-zinc-500 pt-0.5">
                   <span>Balance: {formatCurrency(selectedSourceAccount.balance)}</span>
                   {amount && Number(amount) > 0 && (
                     <span className={selectedSourceAccount.balance >= Number(amount) ? 'text-emerald-600 font-medium' : 'text-rose-500 font-bold'}>

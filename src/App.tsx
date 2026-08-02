@@ -55,7 +55,7 @@ export default function App() {
   }
 
   return (
-    <div id="simplebank-app" className="min-h-screen bg-[#F8F9FB] flex flex-col font-sans antialiased text-gray-900">
+    <div id="simplebank-app" className="min-h-screen bg-yellow-50 flex flex-col font-sans antialiased text-zinc-900">
       
       {/* Navigation Layer */}
       <Navbar
@@ -99,7 +99,7 @@ export default function App() {
       </main>
 
       {/* Footnote footer */}
-      <footer className="bg-white border-t border-[#E9ECEF] py-6 text-center text-xs text-gray-400 font-medium mt-auto">
+      <footer className="bg-black py-6 text-center text-xs text-zinc-400 font-medium mt-auto">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-2">
           <div>SimpleBank Learning Sandbox Portal. Runs on Node.js port 3000 container ingress routing.</div>
           <div className="font-mono text-[10px]">Secure UTC Clock: 2026-07-13</div>

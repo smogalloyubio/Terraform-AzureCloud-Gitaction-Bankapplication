@@ -96,7 +96,7 @@ export default function Dashboard({
         <p className="text-sm text-gray-500 mb-6">Create a bank account first to get started.</p>
         <button
           onClick={onRefreshAccounts}
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition"
+          className="px-4 py-2 bg-yellow-400 hover:bg-yellow-500 text-black rounded-lg text-sm transition font-semibold"
         >
           Retry Load
         </button>
@@ -113,10 +113,10 @@ export default function Dashboard({
           <span className="text-xs font-mono font-medium tracking-wider text-gray-400 uppercase">
             Customer Dashboard
           </span>
-          <h1 className="text-3xl font-sans font-semibold text-gray-900 tracking-tight">
+          <h1 className="text-3xl font-sans font-semibold text-zinc-900 tracking-tight">
             Welcome back, {user.firstName}!
           </h1>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-zinc-500">
             Here is your financial ledger and core banking overview.
           </p>
         </div>
@@ -126,7 +126,7 @@ export default function Dashboard({
               onRefreshAccounts();
               fetchRecentTransactions();
             }}
-            className="p-2 bg-white border border-[#E9ECEF] hover:bg-gray-50 rounded-lg text-gray-600 transition flex items-center gap-1.5 text-xs font-medium cursor-pointer"
+            className="p-2 bg-white border border-zinc-200 hover:bg-zinc-50 rounded-lg text-zinc-600 transition flex items-center gap-1.5 text-xs font-medium cursor-pointer"
             title="Refresh Account Balances"
           >
             <RefreshCw className="w-3.5 h-3.5" />
@@ -160,8 +160,8 @@ export default function Dashboard({
                     onClick={() => onSelectAccount(acc)}
                     className={`p-6 rounded-2xl cursor-pointer transition relative overflow-hidden flex flex-col justify-between h-40 ${
                       isSelected
-                        ? 'bg-zinc-950 text-white shadow-sm'
-                        : 'bg-[#F8F9FB] border border-[#E9ECEF] text-gray-800 hover:bg-gray-100/60'
+                        ? 'bg-yellow-400 text-black shadow-sm'
+                        : 'bg-zinc-100 border border-zinc-200 text-zinc-800 hover:bg-zinc-200/60'
                     }`}
                   >
                     {/* Visual pattern ornament */}
@@ -170,15 +170,15 @@ export default function Dashboard({
                     <div className="flex justify-between items-start">
                       <div>
                         <span className={`text-[10px] font-semibold uppercase px-2.5 py-1 rounded-md ${
-                          isSelected ? 'bg-zinc-800 text-zinc-300' : 'bg-gray-200 text-gray-700'
+                          isSelected ? 'bg-black text-yellow-400' : 'bg-zinc-200 text-zinc-700'
                         }`}>
                           {acc.accountType}
                         </span>
-                        <div className={`text-xs font-mono mt-3 ${isSelected ? 'text-zinc-400' : 'text-gray-500'}`}>
+                        <div className={`text-xs font-mono mt-3 ${isSelected ? 'text-zinc-800' : 'text-zinc-500'}`}>
                           {acc.accountNumber}
                         </div>
                       </div>
-                      <CreditCard className={`w-5 h-5 ${isSelected ? 'text-blue-500' : 'text-gray-400'}`} />
+                      <CreditCard className={`w-5 h-5 ${isSelected ? 'text-black' : 'text-zinc-400'}`} />
                     </div>
 
                     <div className="space-y-0.5 z-10">
@@ -197,33 +197,33 @@ export default function Dashboard({
 
           {/* Quick Stats overview panel */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="bg-white p-6 rounded-2xl border border-[#E9ECEF] flex items-center gap-4">
-              <div className="p-3 bg-emerald-50 rounded-xl text-emerald-600">
+            <div className="bg-white p-6 rounded-2xl border border-zinc-200 flex items-center gap-4">
+              <div className="p-3 bg-yellow-100 rounded-xl text-yellow-600">
                 <ArrowDownLeft className="w-5 h-5" />
               </div>
               <div>
-                <div className="text-[10px] uppercase font-semibold text-gray-500">Inbound Funds</div>
-                <div className="text-base font-semibold text-gray-900">100% Secure</div>
+                <div className="text-[10px] uppercase font-semibold text-zinc-500">Inbound Funds</div>
+                <div className="text-base font-semibold text-zinc-900">100% Secure</div>
               </div>
             </div>
 
-            <div className="bg-white p-6 rounded-2xl border border-[#E9ECEF] flex items-center gap-4">
-              <div className="p-3 bg-blue-50 rounded-xl text-blue-600">
+            <div className="bg-white p-6 rounded-2xl border border-zinc-200 flex items-center gap-4">
+              <div className="p-3 bg-yellow-100 rounded-xl text-yellow-600">
                 <ArrowUpRight className="w-5 h-5" />
               </div>
               <div>
-                <div className="text-[10px] uppercase font-semibold text-gray-500">Outbound Limits</div>
-                <div className="text-base font-semibold text-gray-900">No Cap Limit</div>
+                <div className="text-[10px] uppercase font-semibold text-zinc-500">Outbound Limits</div>
+                <div className="text-base font-semibold text-zinc-900">No Cap Limit</div>
               </div>
             </div>
 
-            <div className="bg-white p-6 rounded-2xl border border-[#E9ECEF] flex items-center gap-4">
-              <div className="p-3 bg-gray-50 rounded-xl text-gray-600">
+            <div className="bg-white p-6 rounded-2xl border border-zinc-200 flex items-center gap-4">
+              <div className="p-3 bg-zinc-100 rounded-xl text-zinc-600">
                 <DollarSign className="w-5 h-5" />
               </div>
               <div>
-                <div className="text-[10px] uppercase font-semibold text-gray-500">Account Tier</div>
-                <div className="text-base font-semibold text-gray-900">Premier Gold</div>
+                <div className="text-[10px] uppercase font-semibold text-zinc-500">Account Tier</div>
+                <div className="text-base font-semibold text-zinc-900">Premier Gold</div>
               </div>
             </div>
           </div>
