@@ -1,4 +1,4 @@
-1resource "azurerm_network_security_group" "master_nsg" {
+resource "azurerm_network_security_group" "master_nsg" {
   name                = "k3s-master-nsg"
   location            = var.location
   resource_group_name = var.resource_group_name
