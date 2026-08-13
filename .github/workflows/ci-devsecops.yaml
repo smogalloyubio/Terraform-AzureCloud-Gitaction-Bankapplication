@@ -256,6 +256,9 @@ jobs:
       - name: Start App Container
         run: docker run -d -p 3000:3000 simplebank:${{ github.sha }}
 
+      - name: Pull ZAP Image
+        run: docker pull owasp/zap2docker-stable:latest
+
       - name: Run ZAP Baseline Scan
         run: docker run --rm owasp/zap2docker-stable zap-baseline.py \
               -t http://localhost:3000 \
