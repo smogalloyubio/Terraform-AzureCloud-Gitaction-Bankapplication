@@ -23,21 +23,16 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Run Gitleaks
-        id: gitleaks
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          report_format: sarif
-          report_path: gitleaks.sarif
-
+      - name: Run Gitleaks (Docker)
+        run: |
+          docker run --rm -v ${{ github.workspace }}:/path zricethezav/gitleaks:latest detect --source /path --report-path /path/gitleaks.json --report-format json
+        
       - name: Upload Gitleaks Report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: simplebank-gitleaks
-          path: gitleaks.sarif
+          path: gitleaks.json
           retention-days: 14
 
   # 02 DEPENDENCY AUDIT
