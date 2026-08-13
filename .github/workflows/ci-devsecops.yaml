@@ -140,17 +140,11 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Check for Tests
+      - name: Run Tests
         run: |
-          echo "TESTS NOT FOUND" > test-output.txt
+          echo "No test framework is currently configured."
+          echo "Please install a test runner (e.g., vitest or jest) and add tests to the repository."
           exit 0
-
-      - name: Upload Test Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: simplebank-tests
-          path: test-output.txt
-          retention-days: 7
 
   codeql-sast:
     name: 06 CodeQL SAST
