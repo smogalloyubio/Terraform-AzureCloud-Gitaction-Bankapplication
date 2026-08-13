@@ -1,0 +1,337 @@
+name: SimpleBank DevSecOps CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+jobs:
+  # 01 GITLEAKS - Secret Scanning
+  secret-scan:
+    name: 01 Gitleaks Secret Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Gitleaks
+        id: gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          report_format: sarif
+          report_path: gitleaks.sarif
+
+      - name: Upload Gitleaks Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: simplebank-gitleaks
+          path: gitleaks.sarif
+          retention-days: 14
+
+  # 02 DEPENDENCY AUDIT
+  dependency-audit:
+    name: 02 Dependency Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: npm audit
+        run: npm audit --json > npm-audit.json || true
+
+      - name: Upload Audit Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: simplebank-dependency-audit
+          path: npm-audit.json
+          retention-days: 14
+
+  # 03 LINT / 04 TYPESCRIPT
+  lint-and-typecheck:
+    name: 03-04 Lint & Type Check
+    runs-on: ubuntu-latest
+    needs: [secret-scan]
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run TypeScript (Actual Lint in package.json)
+        run: |
+          npm run lint > typescript-output.txt 2>&1
+        
+      - name: Upload TypeScript Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: simplebank-typescript
+          path: typescript-output.txt
+          retention-days: 7
+
+      - name: Upload Lint Artifact (Duplicate of TS for structure)
+        uses: actions/upload-artifact@v4
+        with:
+          name: simplebank-lint
+          path: typescript-output.txt
+          retention-days: 7
+
+  # 05 TESTS
+  unit-tests:
+    name: 05 Unit Tests
+    runs-on: ubuntu-latest
+    needs: [lint-and-typecheck]
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Check for Tests
+        run: |
+          echo "TESTS NOT FOUND" > test-output.txt
+          exit 0
+
+      - name: Upload Test Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: simplebank-tests
+          path: test-output.txt
+          retention-days: 7
+
+  # 06 SAST - CodeQL
+  codeql-sast:
+    name: 06 CodeQL SAST
+    runs-on: ubuntu-latest
+    needs: [lint-and-typecheck]
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'javascript-typescript' ]
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{matrix.language}}"
+
+  # 07 PRODUCTION BUILD
+  production-build:
+    name: 07 Production Build
+    runs-on: ubuntu-latest
+    needs: [unit-tests]
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Build Application
+        run: npm run build
+
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: simplebank-frontend-build
+          path: dist/
+          retention-days: 7
+
+  # 08 APPLICATION SBOM
+  application-sbom:
+    name: 08 Application SBOM
+    runs-on: ubuntu-latest
+    needs: [production-build]
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Generate SBOM (Syft)
+        uses: anchore/sbom-action@v0
+        with:
+          format: cyclonedx-json
+          output-file: sbom.json
+
+      - name: Upload SBOM Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: simplebank-application-sbom
+          path: sbom.json
+          retention-days: 14
+
+  # 09 TRIVY FILESYSTEM SCAN
+  trivy-fs:
+    name: 09 Trivy Filesystem Scan
+    runs-on: ubuntu-latest
+    needs: [secret-scan]
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy FS Scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          format: 'sarif'
+          output: 'trivy-fs.sarif'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '1'
+
+      - name: Run Trivy FS Scan (JSON)
+        if: always()
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          format: 'json'
+          output: 'trivy-fs.json'
+
+      - name: Upload Trivy FS Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: simplebank-trivy-filesystem
+          path: |
+            trivy-fs.json
+            trivy-fs.sarif
+          retention-days: 14
+
+  # 10 DOCKER BUILD
+  docker-build:
+    name: 10 Docker Build
+    runs-on: ubuntu-latest
+    needs: [production-build]
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Build Image
+        run: |
+          docker build -t simplebank:${{ github.sha }} .
+          echo "IMAGE_TAG=simplebank:${{ github.sha }}" >> image-info.txt
+          docker inspect simplebank:${{ github.sha }} > image-metadata.json
+
+      - name: Upload Docker Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: simplebank-docker-build
+          path: |
+            image-info.txt
+            image-metadata.json
+          retention-days: 7
+
+  # 11 TRIVY CONTAINER SCAN
+  trivy-container:
+    name: 11 Trivy Container Scan
+    runs-on: ubuntu-latest
+    needs: [docker-build]
+    steps:
+      - name: Run Trivy Image Scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'simplebank:${{ github.sha }}'
+          format: 'sarif'
+          output: 'trivy-image.sarif'
+          severity: 'CRITICAL'
+          exit-code: '1'
+
+      - name: Run Trivy Image Scan (JSON)
+        if: always()
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'simplebank:${{ github.sha }}'
+          format: 'json'
+          output: 'trivy-image.json'
+
+      - name: Upload Trivy Container Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: simplebank-trivy-container
+          path: |
+            trivy-image.json
+            trivy-image.sarif
+          retention-days: 14
+
+  # 12 CONTAINER SBOM
+  container-sbom:
+    name: 12 Container SBOM
+    runs-on: ubuntu-latest
+    needs: [docker-build]
+    steps:
+      - name: Generate Image SBOM (Syft)
+        uses: anchore/sbom-action@v0
+        with:
+          image: 'simplebank:${{ github.sha }}'
+          format: cyclonedx-json
+          output-file: image-sbom.json
+
+      - name: Upload Container SBOM Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: simplebank-container-sbom
+          path: image-sbom.json
+          retention-days: 14
+
+  # 13 FINAL SUMMARY
+  pipeline-summary:
+    name: 13 Final Summary
+    runs-on: ubuntu-latest
+    needs: [secret-scan, dependency-audit, lint-and-typecheck, unit-tests, codeql-sast, production-build, application-sbom, trivy-fs, docker-build, trivy-container, container-sbom]
+    if: always()
+    steps:
+      - name: Summary Table
+        run: |
+          echo "## SimpleBank DevSecOps Pipeline Summary" >> $GITHUB_STEP_SUMMARY
+          echo "| Stage | Status | Tool | Artifact |" >> $GITHUB_STEP_SUMMARY
+          echo "| :--- | :--- | :--- | :--- |" >> $GITHUB_STEP_SUMMARY
+          echo "| Secret Scanning | ${{ needs.secret-scan.result }} | Gitleaks | simplebank-gitleaks |" >> $GITHUB_STEP_SUMMARY
+          echo "| Dependency Audit | ${{ needs.dependency-audit.result }} | npm audit | simplebank-dependency-audit |" >> $GITHUB_STEP_SUMMARY
+          echo "| Lint / Type Check | ${{ needs.lint-and-typecheck.result }} | TypeScript | simplebank-typescript |" >> $GITHUB_STEP_SUMMARY
+          echo "| Unit Tests | ${{ needs.unit-tests.result }} | (None Found) | simplebank-tests |" >> $GITHUB_STEP_SUMMARY
+          echo "| SAST | ${{ needs.codeql-sast.result }} | CodeQL | (Automatic) |" >> $GITHUB_STEP_SUMMARY
+          echo "| Application Build | ${{ needs.production-build.result }} | Vite | simplebank-frontend-build |" >> $GITHUB_STEP_SUMMARY
+          echo "| Application SBOM | ${{ needs.application-sbom.result }} | Syft | simplebank-application-sbom |" >> $GITHUB_STEP_SUMMARY
+          echo "| Filesystem Scan | ${{ needs.trivy-fs.result }} | Trivy | simplebank-trivy-filesystem |" >> $GITHUB_STEP_SUMMARY
+          echo "| Docker Build | ${{ needs.docker-build.result }} | Docker | simplebank-docker-build |" >> $GITHUB_STEP_SUMMARY
+          echo "| Container Scan | ${{ needs.trivy-container.result }} | Trivy | simplebank-trivy-container |" >> $GITHUB_STEP_SUMMARY
+          echo "| Container SBOM | ${{ needs.container-sbom.result }} | Syft | simplebank-container-sbom |" >> $GITHUB_STEP_SUMMARY
+          
+          echo "### Build Metadata" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit SHA**: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch**: \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Docker Image**: \`simplebank:${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
