@@ -222,8 +222,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Load Image
-        run: docker load -i simplebank-image.tar
+      - name: Download Docker Image Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-image-${{ github.sha }}
+
+      - name: Debug Artifact Contents
+        run: ls -R
+
+      - name: Load Docker Image
+        run: docker load -i docker-image-${{ github.sha }}/simplebank-image.tar
 
       - name: Scan Image
         uses: aquasecurity/trivy-action@master
@@ -245,32 +253,35 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download Docker Image
+      - name: Download Docker Image Artifact
         uses: actions/download-artifact@v4
         with:
           name: docker-image-${{ github.sha }}
 
-      - name: Debug Artifacts
+      - name: Debug Artifact Contents
         run: ls -R
 
-      - name: Load Image
+      - name: Load Docker Image
         run: docker load -i simplebank-image.tar
 
       - name: Start App Container
         run: docker run -d -p 3000:3000 simplebank:${{ github.sha }}
 
-      - name: Pull ZAP Image
-        run: docker pull owasp/zap2docker-stable:latest
+      - name: Pull ZAP Baseline Image
+        run: docker pull owasp/zap2docker-stable
 
       - name: Run ZAP Baseline Scan
-        run: docker run --rm owasp/zap2docker-stable zap-baseline.py \
-              -t http://localhost:3000 \
-              -r zap-report.html
+        run: |
+          docker run --rm \
+            owasp/zap2docker-stable zap-baseline.py \
+            -t http://localhost:3000 \
+            -r zap-report.html
 
       - uses: actions/upload-artifact@v4
         with:
           name: dast-zap-report-${{ github.sha }}
           path: zap-report.html
+
 
 
   docker-push:
