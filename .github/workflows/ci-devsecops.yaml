@@ -1,4 +1,4 @@
-name: SimpleBank DevSecOps  CI & CD
+name: SimpleBank DevSecOps CI & CD
 
 on:
   push:
@@ -17,14 +17,12 @@ permissions:
 
 jobs:
 
-
   secret-scan:
     name: Gitleaks Secret Scan
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with: 
-          fetch-depth: 0
+        with: { fetch-depth: 0 }
 
       - name: Run Gitleaks (Docker)
         run: |
@@ -35,13 +33,10 @@ jobs:
             --report-path /path/gitleaks.json \
             --report-format json
 
-
       - uses: actions/upload-artifact@v4
         with:
           name: gitleaks-secret-scan
           path: gitleaks.json
-
-
 
 
   checkov-terraform:
@@ -110,7 +105,6 @@ jobs:
           path: checkov-k8s.sarif
 
 
-
   lint-and-typecheck:
     name: Lint & Type Check
     runs-on: ubuntu-latest
@@ -118,22 +112,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: 
+        with:
           node-version: 22
-          cache: 'npm' 
+          cache: 'npm'
 
       - run: npm ci
       - run: npm run lint --if-present
 
-      - name: Upload Lint Report
-        if: always()
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: lint-report
           path: lint-report.json
 
 
- 
   unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest
@@ -141,19 +132,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: 
+        with:
           node-version: 22
-          cache: 'npm' 
+          cache: 'npm'
 
       - run: npm ci
-      - run: npm run test --if-present
+      - run: npm run test --if-present -- --json --outputFile=unit-test-report.json
 
-      - name: Upload Unit Test Report
-        if: always()
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: unit-test-report
           path: unit-test-report.json
+
 
   dependency-audit:
     name: Dependency Audit
@@ -162,9 +152,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with:  
+        with:
           node-version: 22
-          cache: 'npm' 
+          cache: 'npm'
 
       - run: npm audit --json > npm-audit.json || true
 
@@ -173,6 +163,7 @@ jobs:
           name: dependency-audit-report
           path: npm-audit.json
 
+
   codeql-sast:
     name: CodeQL SAST
     runs-on: ubuntu-latest
@@ -180,7 +171,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: [ 'javascript-typescript' ]
+        language: ['javascript-typescript']
 
     steps:
       - uses: actions/checkout@v4
@@ -191,6 +182,7 @@ jobs:
       - uses: github/codeql-action/analyze@v3
         with:
           category: "/language:${{matrix.language}}"
+
 
   docker-build:
     name: Build Docker Image
@@ -215,6 +207,7 @@ jobs:
           name: docker-image-${{ github.sha }}
           path: simplebank-image.tar
 
+
   trivy-image-scan:
     name: Trivy Image Scan
     runs-on: ubuntu-latest
@@ -231,7 +224,7 @@ jobs:
         run: ls -R
 
       - name: Load Docker Image
-        run: docker load -i docker-image-${{ github.sha }}/simplebank-image.tar
+        run: docker load -i simplebank-image.tar
 
       - name: Scan Image
         uses: aquasecurity/trivy-action@master
@@ -246,12 +239,19 @@ jobs:
           name: trivy-image-scan-${{ github.sha }}
           path: trivy-image.sarif
 
+
   dast-scan:
     name: OWASP ZAP DAST Scan
     runs-on: ubuntu-latest
     needs: [docker-build]
     steps:
       - uses: actions/checkout@v4
+
+      - name: Login to Docker Hub (required for ZAP image)
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Download Docker Image Artifact
         uses: actions/download-artifact@v4
@@ -283,7 +283,6 @@ jobs:
           path: zap-report.html
 
 
-
   docker-push:
     name: Push Docker Image (Only if all tests pass)
     runs-on: ubuntu-latest
@@ -302,8 +301,8 @@ jobs:
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Load Image
         run: docker load -i simplebank-image.tar
