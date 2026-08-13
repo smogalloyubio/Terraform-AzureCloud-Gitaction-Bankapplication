@@ -31,7 +31,6 @@ module "security" {
   source              = "./modules/security"
   resource_group_name = data.azurerm_resource_group.rg.name
   location            = var.location
-  my_ip               = var.my_ip
   master_subnet_id    = module.network.master_subnet_id
   worker_subnet_id    = module.network.worker_subnet_id
 }

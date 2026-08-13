@@ -8,11 +8,6 @@ variable "location" {
   type        = string
 }
 
-variable "my_ip" {
-  description = "Public IP address allowed to SSH to the master"
-  type        = string
-}
-
 variable "master_subnet_id" {
   description = "The ID of the master subnet"
   type        = string
