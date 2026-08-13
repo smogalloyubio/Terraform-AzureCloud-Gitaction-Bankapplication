@@ -34,6 +34,12 @@ variable "k3s_token" {
   sensitive   = true
 }
 
+variable "admin_password" {
+  description = "The admin password for the VMs"
+  type        = string
+  sensitive   = true
+}
+
 variable "tags" {
   description = "Tags to apply to compute resources"
   type        = map(string)

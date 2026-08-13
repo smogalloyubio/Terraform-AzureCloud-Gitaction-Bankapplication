@@ -27,12 +27,9 @@ resource "azurerm_linux_virtual_machine" "master" {
   resource_group_name = var.resource_group_name
   size                = "Standard_B2s"
   admin_username      = "azureuser"
+  admin_password      = var.admin_password
+  disable_password_authentication = false
   network_interface_ids = [azurerm_network_interface.master_nic.id]
-
-  admin_ssh_key {
-    username   = "azureuser"
-    public_key = file("~/.ssh/id_rsa.pub")
-  }
 
   os_disk {
     caching              = "ReadWrite"
@@ -75,12 +72,9 @@ resource "azurerm_linux_virtual_machine" "worker" {
   resource_group_name = var.resource_group_name
   size                = "Standard_B2s"
   admin_username      = "azureuser"
+  admin_password      = var.admin_password
+  disable_password_authentication = false
   network_interface_ids = [azurerm_network_interface.worker_nic[count.index].id]
-
-  admin_ssh_key {
-    username   = "azureuser"
-    public_key = file("~/.ssh/id_rsa.pub")
-  }
 
   os_disk {
     caching              = "ReadWrite"

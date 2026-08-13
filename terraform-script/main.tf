@@ -1,19 +1,4 @@
-terraform {
-  required_providers {
-    azurerm = {
-      source  = "hashicorp/azurerm"
-      version = "~> 3.0"
-    }
-    random = {
-      source  = "hashicorp/random"
-      version = "~> 3.0"
-    }
-  }
-}
 
-provider "azurerm" {
-  features {}
-}
 
 data "azurerm_resource_group" "rg" {
   name = var.resource_group_name
@@ -48,7 +33,7 @@ module "security" {
   location            = var.location
   my_ip               = var.my_ip
   master_subnet_id    = module.network.master_subnet_id
-  worker_subnet_id    = module.worker_subnet_id
+  worker_subnet_id    = module.network.worker_subnet_id
 }
 
 module "compute" {
@@ -60,6 +45,7 @@ module "compute" {
   master_private_ip   = "10.0.1.5"
   master_public_ip    = module.network.master_public_ip
   k3s_token           = random_string.token.result
+  admin_password      = var.admin_password
 }
 
 module "ingress" {

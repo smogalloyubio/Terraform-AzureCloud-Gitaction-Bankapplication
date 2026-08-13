@@ -17,3 +17,9 @@ variable "ssh_key_path" {
   description = "Path to SSH private key"
   type        = string
 }
+
+variable "admin_password" {
+  description = "Admin password for VMs"
+  type        = string
+  sensitive   = true
+}
