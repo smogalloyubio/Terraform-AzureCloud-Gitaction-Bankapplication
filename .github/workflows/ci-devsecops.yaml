@@ -250,6 +250,9 @@ jobs:
         with:
           name: docker-image-${{ github.sha }}
 
+      - name: Debug Artifacts
+        run: ls -R
+
       - name: Load Image
         run: docker load -i simplebank-image.tar
 
