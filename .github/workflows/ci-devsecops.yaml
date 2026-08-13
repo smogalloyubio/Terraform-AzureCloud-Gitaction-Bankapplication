@@ -23,14 +23,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }
+        with: 
+          fetch-depth: 0
 
-      - name: Run Gitleaks
-        run: docker run --rm -v ${{ github.workspace }}:/path \
-              zricethezav/gitleaks:latest detect \
-              --source /path \
-              --report-path /path/gitleaks.json \
-              --report-format json
+      - name: Run Gitleaks (Docker)
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/path" \
+            zricethezav/gitleaks:latest detect \
+            --source /path \
+            --report-path /path/gitleaks.json \
+            --report-format json
+
 
       - uses: actions/upload-artifact@v4
         with:
