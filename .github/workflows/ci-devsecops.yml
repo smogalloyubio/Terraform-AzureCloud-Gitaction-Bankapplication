@@ -3,9 +3,17 @@ name: SimpleBank DevSecOps CI
 on:
   push:
     branches: [ main ]
+    paths:
+      - '.github/workflows/ci-devsecops.yml'
+      - 'Dockerfile'
+      - 'src/**'
   pull_request:
     branches: [ main ]
-  workflow_dispatch:
+    paths:
+      - '.github/workflows/ci-devsecops.yml'
+      - 'Dockerfile'
+      - 'src/**'
+
 
 permissions:
   contents: read
@@ -13,7 +21,6 @@ permissions:
   actions: read
 
 jobs:
-  # 01 GITLEAKS - Secret Scanning
   secret-scan:
     name: 01 Gitleaks Secret Scan
     runs-on: ubuntu-latest
@@ -25,7 +32,9 @@ jobs:
 
       - name: Run Gitleaks (Docker)
         run: |
-          docker run --rm -v ${{ github.workspace }}:/path zricethezav/gitleaks:latest detect --source /path --report-path /path/gitleaks.json --report-format json
+          docker run --rm -v \
+          ${{ github.workspace }}:/path zricethezav/gitleaks:latest \
+          detect --source /path --report-path /path/gitleaks.json --report-format json
         
       - name: Upload Gitleaks Report
         if: always()
