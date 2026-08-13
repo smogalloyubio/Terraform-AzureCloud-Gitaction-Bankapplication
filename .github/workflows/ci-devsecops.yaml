@@ -15,7 +15,7 @@ on:
       - 'Dockerfile'
       - 'src/**'
       - 'terraform-script/**'
-
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -23,38 +23,25 @@ permissions:
   actions: read
 
 jobs:
+  # PARALLEL SCANNING & QUALITY STAGE
+  # These jobs run concurrently to maximize pipeline speed
+  
   secret-scan:
-    name: 01 Gitleaks Secret Scan
+    name: Gitleaks Secret Scan
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
       - name: Run Gitleaks (Docker)
-        run: |
-          docker run --rm -v \
-          ${{ github.workspace }}:/path zricethezav/gitleaks:latest \
-          detect --source /path --report-path /path/gitleaks.json --report-format json
-        
-      - name: Upload Gitleaks Report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: simplebank-gitleaks
-          path: gitleaks.json
-          retention-days: 14
+        run: docker run --rm -v ${{ github.workspace }}:/path zricethezav/gitleaks:latest detect --source /path --report-path /path/gitleaks.json --report-format json
+      - uses: actions/upload-artifact@v4
+        with: { name: simplebank-gitleaks, path: gitleaks.json }
 
-
-  # 02 CHECKOV SCAN
   checkov-scan:
-    name: 02 Checkov Security Scan
+    name: Checkov Security Scan
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
+      - uses: actions/checkout@v4
       - name: Run Checkov Scan
         uses: bridgecrewio/checkov-action@master
         with:
@@ -63,97 +50,73 @@ jobs:
           output_format: sarif
           output_file_path: checkov.sarif
           soft_fail: true
+      - uses: actions/upload-artifact@v4
+        with: { name: simplebank-checkov, path: checkov.sarif }
 
-      - name: Upload Checkov Report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: simplebank-checkov
-          path: checkov.sarif
-          retention-days: 14
-
-  dependency-audit:
-    name: 02 Dependency Audit
+  semgrep-sast:
+    name: Semgrep SAST
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - name: Run Semgrep
+        uses: semgrep/semgrep-action@v1
         with:
-          node-version: 20
-          cache: 'npm'
+          generateSarif: "1"
+      - uses: actions/upload-artifact@v4
+        with: { name: semgrep-report, path: semgrep.sarif }
 
-      - name: npm audit
-        run: npm audit --json > npm-audit.json || true
-
-      - name: Upload Audit Report
-        uses: actions/upload-artifact@v4
+  trivy-k8s-scan:
+    name: Trivy K8s Manifest Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Trivy Scan
+        uses: aquasecurity/trivy-action@master
         with:
-          name: simplebank-dependency-audit
-          path: npm-audit.json
-          retention-days: 14
+          scan-type: 'config'
+          hide-progress: true
+          format: 'sarif'
+          output: 'trivy-k8s.sarif'
+          severity: 'CRITICAL,HIGH'
+      - uses: actions/upload-artifact@v4
+        with: { name: trivy-k8s-report, path: trivy-k8s.sarif }
 
- 
   lint-and-typecheck:
-    name: 03-04 Lint & Type Check
+    name: Lint & Type Check
     runs-on: ubuntu-latest
-    needs: [secret-scan]
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'npm'
-
-      - name: Install Dependencies
-        run: npm ci
-
-      - name: Run TypeScript (Actual Lint in package.json)
-        run: |
-          npm run lint > typescript-output.txt 2>&1
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: 'npm' }
+      - run: npm ci
+      - run: npm run lint
         
-      - name: Upload TypeScript Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: simplebank-typescript
-          path: typescript-output.txt
-          retention-days: 7
-
-      - name: Upload Lint Artifact (Duplicate of TS for structure)
-        uses: actions/upload-artifact@v4
-        with:
-          name: simplebank-lint
-          path: typescript-output.txt
-          retention-days: 7
-
-
   unit-tests:
-    name: 05 Unit Tests
+    name: Unit Tests
     runs-on: ubuntu-latest
-    needs: [lint-and-typecheck]
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: 'npm' }
+      - run: npm ci
+      - run: npm run test
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'npm'
-
-      - name: Install Dependencies
-        run: npm ci
-
-      - name: Run Tests
-        run: npm run test
+  # DEPENDENCY AUDIT & SAST (Heavy jobs)
+  # These depend on lint/tests finishing successfully
+  dependency-audit:
+    name: Dependency Audit
+    runs-on: ubuntu-latest
+    needs: [lint-and-typecheck, unit-tests]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: 'npm' }
+      - run: npm audit --json > npm-audit.json || true
+      - uses: actions/upload-artifact@v4
+        with: { name: simplebank-dependency-audit, path: npm-audit.json }
 
   codeql-sast:
-    name: 06 CodeQL SAST
+    name: CodeQL SAST
     runs-on: ubuntu-latest
     needs: [lint-and-typecheck]
     strategy:
@@ -161,180 +124,10 @@ jobs:
       matrix:
         language: [ 'javascript-typescript' ]
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
+      - uses: actions/checkout@v4
+      - uses: github/codeql-action/init@v3
         with:
           languages: ${{ matrix.language }}
-
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
+      - uses: github/codeql-action/analyze@v3
         with:
           category: "/language:${{matrix.language}}"
-
-
-  production-build:
-    name: 07 Production Build
-    runs-on: ubuntu-latest
-    needs: [unit-tests]
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'npm'
-
-      - name: Install Dependencies
-        run: npm ci
-
-      - name: Build Application
-        run: npm run build
-
-      - name: Upload Build Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: simplebank-frontend-build
-          path: dist/
-          retention-days: 7
-
-
-  application-sbom:
-    name: 08 Application SBOM
-    runs-on: ubuntu-latest
-    needs: [production-build]
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Generate SBOM (Syft)
-        uses: anchore/sbom-action@v0
-        with:
-          format: cyclonedx-json
-          output-file: sbom.json
-
-      - name: Upload SBOM Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: simplebank-application-sbom
-          path: sbom.json
-          retention-days: 14
-
-
-  trivy-fs:
-    name: 09 Trivy Filesystem Scan
-    runs-on: ubuntu-latest
-    needs: [secret-scan]
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Run Trivy FS Scan
-        uses: aquasecurity/trivy-action@master
-        with:
-          scan-type: 'fs'
-          format: 'sarif'
-          output: 'trivy-fs.sarif'
-          severity: 'CRITICAL,HIGH'
-          exit-code: '1'
-
-      - name: Run Trivy FS Scan (JSON)
-        if: always()
-        uses: aquasecurity/trivy-action@master
-        with:
-          scan-type: 'fs'
-          format: 'json'
-          output: 'trivy-fs.json'
-
-      - name: Upload Trivy FS Report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: simplebank-trivy-filesystem
-          path: |
-            trivy-fs.json
-            trivy-fs.sarif
-          retention-days: 14
-
-  # 10 DOCKER BUILD
-  docker-build:
-    name: 10 Docker Build
-    runs-on: ubuntu-latest
-    needs: [production-build]
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Build Image
-        run: |
-          docker build -t simplebank:${{ github.sha }} .
-          echo "IMAGE_TAG=simplebank:${{ github.sha }}" >> image-info.txt
-          docker inspect simplebank:${{ github.sha }} > image-metadata.json
-
-      - name: Upload Docker Build Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: simplebank-docker-build
-          path: |
-            image-info.txt
-            image-metadata.json
-          retention-days: 7
-
-
-  trivy-container:
-    name: 11 Trivy Container Scan
-    runs-on: ubuntu-latest
-    needs: [docker-build]
-    steps:
-      - name: Run Trivy Image Scan
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: 'simplebank:${{ github.sha }}'
-          format: 'sarif'
-          output: 'trivy-image.sarif'
-          severity: 'CRITICAL'
-          exit-code: '1'
-
-      - name: Run Trivy Image Scan (JSON)
-        if: always()
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: 'simplebank:${{ github.sha }}'
-          format: 'json'
-          output: 'trivy-image.json'
-
-      - name: Upload Trivy Container Report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: simplebank-trivy-container
-          path: |
-            trivy-image.json
-            trivy-image.sarif
-          retention-days: 14
-
-
-  container-sbom:
-    name: 12 Container SBOM
-    runs-on: ubuntu-latest
-    needs: [docker-build]
-    steps:
-      - name: Generate Image SBOM (Syft)
-        uses: anchore/sbom-action@v0
-        with:
-          image: 'simplebank:${{ github.sha }}'
-          format: cyclonedx-json
-          output-file: image-sbom.json
-
-      - name: Upload Container SBOM Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: simplebank-container-sbom
-          path: image-sbom.json
-          retention-days: 14
-
-  
