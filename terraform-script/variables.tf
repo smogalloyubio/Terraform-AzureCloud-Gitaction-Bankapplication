@@ -8,9 +8,10 @@ variable "location" {
   type        = string
 }
 
-variable "ssh_key_path" {
-  description = "Path to SSH private key"
+variable "admin_username" {
+  description = "Admin username for VMs"
   type        = string
+  default     = "azureuser"
 }
 
 variable "admin_password" {

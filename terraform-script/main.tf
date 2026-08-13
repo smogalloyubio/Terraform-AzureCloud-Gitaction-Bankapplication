@@ -44,17 +44,20 @@ module "compute" {
   master_private_ip   = "10.0.1.5"
   master_public_ip    = module.network.master_public_ip
   k3s_token           = random_string.token.result
+  admin_username      = var.admin_username
   admin_password      = var.admin_password
 }
 
 module "ingress" {
   source           = "./modules/ingress"
   master_public_ip = module.compute.master_public_ip
-  ssh_key_path     = var.ssh_key_path
+  admin_username   = var.admin_username
+  admin_password   = var.admin_password
 }
 
 module "app" {
   source           = "./modules/app"
   master_public_ip = module.compute.master_public_ip
-  ssh_key_path     = var.ssh_key_path
+  admin_username   = var.admin_username
+  admin_password   = var.admin_password
 }

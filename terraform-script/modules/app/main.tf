@@ -1,9 +1,9 @@
 resource "null_resource" "deploy_app" {
   connection {
-    type        = "ssh"
-    user        = "azureuser"
-    host        = var.master_public_ip
-    private_key = file(var.ssh_key_path)
+    type     = "ssh"
+    user     = var.admin_username
+    password = var.admin_password
+    host     = var.master_public_ip
   }
 
   provisioner "file" {

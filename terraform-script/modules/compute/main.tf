@@ -26,7 +26,7 @@ resource "azurerm_linux_virtual_machine" "master" {
   location            = var.location
   resource_group_name = var.resource_group_name
   size                = "Standard_B2s"
-  admin_username      = "azureuser"
+  admin_username      = var.admin_username
   admin_password      = var.admin_password
   disable_password_authentication = false
   network_interface_ids = [azurerm_network_interface.master_nic.id]
@@ -71,7 +71,7 @@ resource "azurerm_linux_virtual_machine" "worker" {
   location            = var.location
   resource_group_name = var.resource_group_name
   size                = "Standard_B2s"
-  admin_username      = "azureuser"
+  admin_username      = var.admin_username
   admin_password      = var.admin_password
   disable_password_authentication = false
   network_interface_ids = [azurerm_network_interface.worker_nic[count.index].id]

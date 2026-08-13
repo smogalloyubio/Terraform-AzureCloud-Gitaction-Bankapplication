@@ -3,7 +3,13 @@ variable "master_public_ip" {
   type        = string
 }
 
-variable "ssh_key_path" {
-  description = "Path to the SSH private key"
+variable "admin_username" {
+  description = "Admin username"
   type        = string
+}
+
+variable "admin_password" {
+  description = "Admin password"
+  type        = string
+  sensitive   = true
 }

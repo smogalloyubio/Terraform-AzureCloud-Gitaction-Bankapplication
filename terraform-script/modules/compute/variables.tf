@@ -34,6 +34,11 @@ variable "k3s_token" {
   sensitive   = true
 }
 
+variable "admin_username" {
+  description = "The admin username for the VMs"
+  type        = string
+}
+
 variable "admin_password" {
   description = "The admin password for the VMs"
   type        = string
