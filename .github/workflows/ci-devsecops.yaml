@@ -1,4 +1,4 @@
-name: SimpleBank DevSecOps CI
+name: SimpleBank DevSecOps  CI & CD
 
 on:
   push:
