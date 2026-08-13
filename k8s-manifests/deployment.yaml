@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: simplebank-deployment
+  labels:
+    app: simplebank
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: simplebank
+  template:
+    metadata:
+      labels:
+        app: simplebank
+    spec:
+      containers:
+      - name: simplebank
+        # The pipeline will replace this tag dynamically or you can use :latest
+        image: simplebank:latest
+        ports:
+        - containerPort: 3000
+        resources:
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+          requests:
+            cpu: "250m"
+            memory: "256Mi"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 15
+          periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: simplebank-service
+spec:
+  selector:
+    app: simplebank
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 3000
+  type: ClusterIP
