@@ -43,7 +43,7 @@ jobs:
   checkov-terraform:
     name: Checkov Terraform Scan
     runs-on: ubuntu-latest
-    needs: [Gitleaks Secret Scan]
+    needs: [secret-scan]
     steps:
       - uses: actions/checkout@v4
 
@@ -65,7 +65,7 @@ jobs:
   checkov-dockerfile:
     name: Checkov Dockerfile Scan
     runs-on: ubuntu-latest
-    needs: [Gitleaks Secret Scan]
+    needs: [secret-scan]
     steps:
       - uses: actions/checkout@v4
 
@@ -87,7 +87,7 @@ jobs:
   checkov-kubernetes:
     name: Checkov Kubernetes Scan
     runs-on: ubuntu-latest
-    needs: [Gitleaks Secret Scan]
+    needs: [secret-scan]
     steps:
       - uses: actions/checkout@v4
 
