@@ -146,7 +146,7 @@ jobs:
           cache: 'npm' 
 
       - run: npm ci
-      - run: npm run test --if-present -- --json --outputFile=unit-test-report.json
+      - run: npm run test --if-present
 
       - name: Upload Unit Test Report
         if: always()
