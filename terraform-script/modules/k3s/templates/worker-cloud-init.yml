@@ -1,0 +1,9 @@
+#cloud-config
+package_update: true
+package_upgrade: true
+
+runcmd:
+  - sysctl -w net.ipv4.ip_forward=1
+  - echo "net.ipv4.ip_forward=1" >> /etc/sysctl.d/99-kubernetes.conf
+  - sysctl --system
+  - curl -sfL https://get.k3s.io | K3S_TOKEN="${k3s_token}" K3S_URL="https://${master_private_ip}:6443" sh -s - agent

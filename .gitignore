@@ -6,3 +6,17 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# Terraform files
+.terraform/
+*.tfstate
+*.tfstate.backup
+.terraform.lock.hcl
+*.tfvars
+*.tfvars.json
+
+# Local K3s generated files
+k3s_token.txt
+k3s_kubeconfig.yaml
+k3s_ssh_key.pem
+
