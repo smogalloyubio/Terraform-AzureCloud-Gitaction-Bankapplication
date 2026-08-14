@@ -5,7 +5,7 @@ metadata:
   labels:
     app: simplebank-app
 spec:
-  replicas: 3
+  replicas: 5
   selector:
     matchLabels:
       app: simplebank-app
