@@ -192,32 +192,40 @@ jobs:
           path: simplebank-image.tar
 
 
+
   trivy-image-scan:
     name: Trivy Image Scan
     runs-on: ubuntu-latest
     needs: [docker-build]
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/download-artifact@v4
         with:
           name: docker-image-${{ github.sha }}
+
       - name: Load Docker Image
-        run: docker load -i simplebank-image.tar
+        run: docker load -i docker-image-${{ github.sha }}/simplebank-image.tar
+
       - uses: aquasecurity/trivy-action@master
         with:
-          image-ref: simplebank:${{ github.sha }}
+          image-ref: rukevweubio/simplebank:${{ github.sha }}
           format: sarif
           output: trivy-image.sarif
           severity: CRITICAL,HIGH
+
       - uses: actions/upload-artifact@v4
         with:
           name: trivy-image-scan-${{ github.sha }}
           path: trivy-image.sarif
 
+
   snyk-security-scan:
     name: Snyk Security Scan (SAST + Container)
     runs-on: ubuntu-latest
     needs: [docker-build]
+
     steps:
       - uses: actions/checkout@v4
 
@@ -238,10 +246,10 @@ jobs:
           name: docker-image-${{ github.sha }}
 
       - name: Load Docker Image
-        run: docker load -i simplebank-image.tar
+        run: docker load -i docker-image-${{ github.sha }}/simplebank-image.tar
 
       - name: Snyk Container Scan
-        run: snyk container test simplebank:${{ github.sha }} --json-file-output=snyk-container.json || true
+        run: snyk container test rukevweubio/simplebank:${{ github.sha }} --json-file-output=snyk-container.json || true
 
       - uses: actions/upload-artifact@v4
         with:
@@ -249,6 +257,7 @@ jobs:
           path: |
             snyk-sast.json
             snyk-container.json
+
 
   docker-push:
     name: Push Docker Image
@@ -264,6 +273,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
       - uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
@@ -273,7 +283,7 @@ jobs:
         with:
           name: docker-image-${{ github.sha }}
 
-      - run: docker load -i simplebank-image.tar
+      - run: docker load -i docker-image-${{ github.sha }}/simplebank-image.tar
 
       - run: |
           docker push rukevweubio/simplebank:${{ github.sha }}
