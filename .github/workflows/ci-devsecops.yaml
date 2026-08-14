@@ -1,4 +1,4 @@
-name: SimpleBank DevSecOps  CI & CD
+name: SimpleBank DevSecOps CI & CD
 
 on:
   push:
@@ -12,19 +12,16 @@ on:
 
 permissions:
   contents: read
-  security-events: write
   actions: read
 
 jobs:
-
-
   secret-scan:
     name: Gitleaks Secret Scan
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with: 
-          fetch-depth: 0
+         fetch-depth: 0 
 
       - name: Run Gitleaks (Docker)
         run: |
@@ -35,122 +32,126 @@ jobs:
             --report-path /path/gitleaks.json \
             --report-format json
 
-
       - uses: actions/upload-artifact@v4
         with:
           name: gitleaks-secret-scan
           path: gitleaks.json
 
-
-
-
   checkov-terraform:
-    name: Checkov Terraform Scan
+    name: Checkov Terraform Security Scan
     runs-on: ubuntu-latest
     needs: [secret-scan]
+
     steps:
       - uses: actions/checkout@v4
 
-      - name: Run Checkov (Terraform)
-        uses: bridgecrewio/checkov-action@master
-        with:
-          directory: ./terraform-script
-          framework: terraform
-          output_format: sarif
-          output_file_path: checkov-terraform.sarif
-          soft_fail: true
+      - uses: actions/setup-python@v5
+        with: 
+          python-version: "3.11" 
+
+      - run: pip install checkov
+
+      - name: Run Checkov Terraform
+        run: |
+          checkov -d ./terraform-script \
+            --framework terraform \
+            --output json \
+            > checkov-terraform.json || true
 
       - uses: actions/upload-artifact@v4
         with:
           name: checkov-terraform-report
-          path: checkov-terraform.sarif
-
+          path: checkov-terraform.json
 
   checkov-dockerfile:
     name: Checkov Dockerfile Scan
     runs-on: ubuntu-latest
     needs: [secret-scan]
+
     steps:
       - uses: actions/checkout@v4
 
-      - name: Run Checkov (Dockerfile)
-        uses: bridgecrewio/checkov-action@master
+      - uses: actions/setup-python@v5
         with:
-          directory: .
-          framework: dockerfile
-          output_format: sarif
-          output_file_path: checkov-dockerfile.sarif
-          soft_fail: true
+          python-version: "3.11" 
+
+      - run: pip install checkov
+
+      - name: Run Checkov Dockerfile
+        run: |
+          checkov -d ./Dockerfile \
+            --framework dockerfile \
+            --output json \
+            > checkov-dockerfile.json || true
 
       - uses: actions/upload-artifact@v4
         with:
           name: checkov-dockerfile-report
-          path: checkov-dockerfile.sarif
-
+          path: checkov-dockerfile.json
 
   checkov-kubernetes:
-    name: Checkov Kubernetes Scan
+    name: Checkov Kubernetes Security Scan
     runs-on: ubuntu-latest
     needs: [secret-scan]
+
     steps:
       - uses: actions/checkout@v4
 
-      - name: Run Checkov (Kubernetes)
-        uses: bridgecrewio/checkov-action@master
-        with:
-          directory: ./k8s-manifests
-          framework: kubernetes
-          output_format: sarif
-          output_file_path: checkov-k8s.sarif
-          soft_fail: true
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+
+      - run: pip install checkov
+
+      - name: Run Checkov Kubernetes
+        run: |
+          checkov -d ./k8s-manifests \
+            --framework kubernetes \
+            --output json \
+            > checkov-k8s.json || true
 
       - uses: actions/upload-artifact@v4
         with:
           name: checkov-k8s-report
-          path: checkov-k8s.sarif
-
-
+          path: checkov-k8s.json
 
   lint-and-typecheck:
     name: Lint & Type Check
     runs-on: ubuntu-latest
     needs: [checkov-kubernetes]
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
-        with: 
+        with:
           node-version: 22
-          cache: 'npm' 
+          cache: npm
 
       - run: npm ci
       - run: npm run lint --if-present
 
-      - name: Upload Lint Report
-        if: always()
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: lint-report
           path: lint-report.json
-
-
- 
+-
   unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest
     needs: [checkov-kubernetes]
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
-        with: 
+        with:
           node-version: 22
-          cache: 'npm' 
+          cache: npm
 
       - run: npm ci
       - run: npm run test --if-present
 
-      - name: Upload Unit Test Report
-        if: always()
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: unit-test-report
           path: unit-test-report.json
@@ -159,12 +160,14 @@ jobs:
     name: Dependency Audit
     runs-on: ubuntu-latest
     needs: [lint-and-typecheck, unit-tests]
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
-        with:  
+        with:
           node-version: 22
-          cache: 'npm' 
+          cache: npm
 
       - run: npm audit --json > npm-audit.json || true
 
@@ -173,39 +176,43 @@ jobs:
           name: dependency-audit-report
           path: npm-audit.json
 
+
   codeql-sast:
     name: CodeQL SAST
     runs-on: ubuntu-latest
     needs: [lint-and-typecheck]
+
     strategy:
       fail-fast: false
       matrix:
-        language: [ 'javascript-typescript' ]
+        language: [javascript-typescript]
 
     steps:
       - uses: actions/checkout@v4
+
       - uses: github/codeql-action/init@v3
         with:
           languages: ${{ matrix.language }}
 
       - uses: github/codeql-action/analyze@v3
         with:
-          category: "/language:${{matrix.language}}"
+          category: "/language:${{ matrix.language }}"
 
+-
   docker-build:
     name: Build Docker Image
     runs-on: ubuntu-latest
     needs: [unit-tests]
+
     steps:
       - uses: actions/checkout@v4
 
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
+      - uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build Image with Commit Tag
+      - name: Build Image
         run: |
           docker build -t simplebank:${{ github.sha }} .
           docker save simplebank:${{ github.sha }} -o simplebank-image.tar
@@ -215,83 +222,66 @@ jobs:
           name: docker-image-${{ github.sha }}
           path: simplebank-image.tar
 
+
   trivy-image-scan:
     name: Trivy Image Scan
     runs-on: ubuntu-latest
     needs: [docker-build]
+
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download Docker Image Artifact
-        uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v4
         with:
           name: docker-image-${{ github.sha }}
 
-      - name: Debug Artifact Contents
-        run: ls -R
+      - run: docker load -i simplebank-image.tar
 
-      - name: Load Docker Image
-        run: docker load -i docker-image-${{ github.sha }}/simplebank-image.tar
-
-      - name: Scan Image
-        uses: aquasecurity/trivy-action@master
+      - uses: aquasecurity/trivy-action@master
         with:
           image-ref: simplebank:${{ github.sha }}
-          format: 'sarif'
-          output: 'trivy-image.sarif'
-          severity: 'CRITICAL,HIGH'
+          format: sarif
+          output: trivy-image.sarif
+          severity: CRITICAL,HIGH
 
       - uses: actions/upload-artifact@v4
         with:
           name: trivy-image-scan-${{ github.sha }}
           path: trivy-image.sarif
 
-  ddast-scan:
-  name: OWASP ZAP DAST Scan
-  runs-on: ubuntu-latest
-  needs: [docker-build]
-  steps:
-    - uses: actions/checkout@v4
 
-    - name: Login to Docker Hub (required for ZAP image)
-      uses: docker/login-action@v3
-      with:
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
+  dast-scan:
+    name: OWASP ZAP DAST Scan
+    runs-on: ubuntu-latest
+    needs: [docker-build]
 
-    - name: Download Docker Image Artifact
-      uses: actions/download-artifact@v4
-      with:
-        name: docker-image-${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
 
-    - name: Debug Artifact Contents
-      run: ls -R
+      - uses: actions/download-artifact@v4
+        with:
+          name: docker-image-${{ github.sha }}
 
-    - name: Load Docker Image
-      run: docker load -i docker-image-${{ github.sha }}/simplebank-image.tar
+      - run: docker load -i simplebank-image.tar
 
-    - name: Start App Container
-      run: docker run -d -p 3000:3000 simplebank:${{ github.sha }}
+      - run: docker run -d -p 3000:3000 simplebank:${{ github.sha }}
 
-    - name: Pull ZAP Baseline Image
-      run: docker pull owasp/zap2docker-stable
+      - run: docker pull owasp/zap2docker-stable
 
-    - name: Run ZAP Baseline Scan
-      run: |
-        docker run --rm \
-          owasp/zap2docker-stable zap-baseline.py \
-          -t http://localhost:3000 \
-          -r zap-report.html
+      - run: |
+          docker run --rm \
+            owasp/zap2docker-stable zap-baseline.py \
+            -t http://localhost:3000 \
+            -r zap-report.html
 
-    - uses: actions/upload-artifact@v4
-      with:
-        name: dast-zap-report-${{ github.sha }}
-        path: zap-report.html
-
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dast-zap-report-${{ github.sha }}
+          path: zap-report.html
 
 
   docker-push:
-    name: Push Docker Image (Only if all tests pass)
+    name: Push Docker Image
     runs-on: ubuntu-latest
     needs:
       - trivy-image-scan
@@ -305,14 +295,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
+      - uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Load Image
-        run: docker load -i simplebank-image.tar
+      - run: docker load -i simplebank-image.tar
 
-      - name: Push Image
-        run: docker push simplebank:${{ github.sha }}
+      - run: docker push simplebank:${{ github.sha }}
