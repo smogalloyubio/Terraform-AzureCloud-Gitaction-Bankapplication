@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: simplebank-app
+  labels:
+    app: simplebank-app
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: simplebank-app
+  template:
+    metadata:
+      labels:
+        app: simplebank-app
+    spec:
+      containers:
+      - name: simplebank-app
+        image: rukevweubio/simplebank:latest
+        ports:
+        - containerPort: 3000
