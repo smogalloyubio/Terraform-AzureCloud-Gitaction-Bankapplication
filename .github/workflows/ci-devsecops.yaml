@@ -283,8 +283,12 @@ jobs:
         with:
           name: docker-image-${{ github.sha }}
 
-      - run: docker load -i simplebank-image.tar
+      - name: Load and Tag Docker Image
+        run: |
+          docker load -i simplebank-image.tar
+          docker tag rukevweubio/simplebank:${{ github.sha }} rukevweubio/simplebank:latest
 
-      - run: |
-          
+      - name: Push Docker Image
+        run: |
+          docker push rukevweubio/simplebank:${{ github.sha }}
           docker push rukevweubio/simplebank:latest
