@@ -21,8 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with: 
-         fetch-depth: 0 
+        with: { fetch-depth: 0 }
 
       - name: Run Gitleaks (Docker)
         run: |
@@ -42,23 +41,17 @@ jobs:
     name: Checkov Terraform Security Scan
     runs-on: ubuntu-latest
     needs: [secret-scan]
-
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
-        with: 
-          python-version: "3.11" 
-
+        with: { python-version: "3.11" }
       - run: pip install checkov
-
       - name: Run Checkov Terraform
         run: |
           checkov -d ./terraform-script \
             --framework terraform \
             --output json \
             > checkov-terraform.json || true
-
       - uses: actions/upload-artifact@v4
         with:
           name: checkov-terraform-report
@@ -68,23 +61,17 @@ jobs:
     name: Checkov Dockerfile Scan
     runs-on: ubuntu-latest
     needs: [secret-scan]
-
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11" 
-
+        with: { python-version: "3.11" }
       - run: pip install checkov
-
       - name: Run Checkov Dockerfile
         run: |
           checkov -d ./Dockerfile \
             --framework dockerfile \
             --output json \
             > checkov-dockerfile.json || true
-
       - uses: actions/upload-artifact@v4
         with:
           name: checkov-dockerfile-report
@@ -94,22 +81,17 @@ jobs:
     name: Checkov Kubernetes Security Scan
     runs-on: ubuntu-latest
     needs: [secret-scan]
-
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
         with: { python-version: "3.11" }
-
       - run: pip install checkov
-
       - name: Run Checkov Kubernetes
         run: |
           checkov -d ./k8s-manifests \
             --framework kubernetes \
             --output json \
             > checkov-k8s.json || true
-
       - uses: actions/upload-artifact@v4
         with:
           name: checkov-k8s-report
@@ -119,18 +101,14 @@ jobs:
     name: Lint & Type Check
     runs-on: ubuntu-latest
     needs: [checkov-kubernetes]
-
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-
       - run: npm ci
       - run: npm run lint --if-present
-
       - uses: actions/upload-artifact@v4
         with:
           name: lint-report
@@ -140,18 +118,14 @@ jobs:
     name: Unit Tests
     runs-on: ubuntu-latest
     needs: [checkov-kubernetes]
-
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-
       - run: npm ci
       - run: npm run test --if-present
-
       - uses: actions/upload-artifact@v4
         with:
           name: unit-test-report
@@ -161,40 +135,34 @@ jobs:
     name: Dependency Audit
     runs-on: ubuntu-latest
     needs: [lint-and-typecheck, unit-tests]
-
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-
       - run: npm audit --json > npm-audit.json || true
-
       - uses: actions/upload-artifact@v4
         with:
           name: dependency-audit-report
           path: npm-audit.json
 
-
   codeql-sast:
     name: CodeQL SAST
     runs-on: ubuntu-latest
     needs: [lint-and-typecheck]
-
+    permissions:
+      contents: read
+      security-events: write
     strategy:
       fail-fast: false
       matrix:
         language: [javascript-typescript]
-
     steps:
       - uses: actions/checkout@v4
-
       - uses: github/codeql-action/init@v3
         with:
           languages: ${{ matrix.language }}
-
       - uses: github/codeql-action/analyze@v3
         with:
           category: "/language:${{ matrix.language }}"
@@ -203,10 +171,8 @@ jobs:
     name: Build Docker Image
     runs-on: ubuntu-latest
     needs: [unit-tests]
-
     steps:
       - uses: actions/checkout@v4
-
       - uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
@@ -222,42 +188,33 @@ jobs:
         with:
           name: docker-image-${{ github.sha }}
           path: simplebank-image.tar
- 
-
 
   trivy-image-scan:
     name: Trivy Image Scan
     runs-on: ubuntu-latest
     needs: [docker-build]
-
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/download-artifact@v4
         with:
           name: docker-image-${{ github.sha }}
-
-      - name: load docker image 
-        run: docker load -i simplebank-image.tar
-
+      - name: Load Docker Image
+        run: docker load -i docker-image-${{ github.sha }}/simplebank-image.tar
       - uses: aquasecurity/trivy-action@master
         with:
           image-ref: simplebank:${{ github.sha }}
           format: sarif
           output: trivy-image.sarif
           severity: CRITICAL,HIGH
-
       - uses: actions/upload-artifact@v4
         with:
           name: trivy-image-scan-${{ github.sha }}
           path: trivy-image.sarif
 
-
   snyk-security-scan:
     name: Snyk Security Scan (SAST + Container)
     runs-on: ubuntu-latest
     needs: [docker-build]
-
     steps:
       - uses: actions/checkout@v4
 
@@ -268,9 +225,8 @@ jobs:
           sudo mv snyk /usr/local/bin/
 
       - name: Authenticate Snyk
-        run: snyk auth ${{ secrets.SYNK_TOKEN }}
+        run: snyk auth ${{ secrets.SNYK_TOKEN }}
 
-  
       - name: Snyk SAST Scan
         run: snyk code test --json-file-output=snyk-sast.json || true
 
@@ -278,10 +234,8 @@ jobs:
         with:
           name: docker-image-${{ github.sha }}
 
-   
       - name: Load Docker Image
         run: docker load -i docker-image-${{ github.sha }}/simplebank-image.tar
-
 
       - name: Snyk Container Scan
         run: snyk container test simplebank:${{ github.sha }} --json-file-output=snyk-container.json || true
@@ -292,8 +246,6 @@ jobs:
           path: |
             snyk-sast.json
             snyk-container.json
-
-
 
   docker-push:
     name: Push Docker Image
@@ -309,7 +261,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
       - uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
