@@ -181,13 +181,16 @@ jobs:
       - name: Build Image
         run: |
           docker build -t simplebank:${{ github.sha }} .
+          docker build -t simplebank:latest .
           docker tag simplebank:${{ github.sha }} rukevweubio/simplebank:${{ github.sha }}
+          docker tag simplebank:latest rukevweubio/simplebank:latest
           docker save rukevweubio/simplebank:${{ github.sha }} -o simplebank-image.tar
 
       - uses: actions/upload-artifact@v4
         with:
           name: docker-image-${{ github.sha }}
           path: simplebank-image.tar
+
 
   trivy-image-scan:
     name: Trivy Image Scan
@@ -199,7 +202,7 @@ jobs:
         with:
           name: docker-image-${{ github.sha }}
       - name: Load Docker Image
-        run: docker load -i docker-image-${{ github.sha }}/simplebank-image.tar
+        run: docker load -i simplebank-image.tar
       - uses: aquasecurity/trivy-action@master
         with:
           image-ref: simplebank:${{ github.sha }}
@@ -235,7 +238,7 @@ jobs:
           name: docker-image-${{ github.sha }}
 
       - name: Load Docker Image
-        run: docker load -i docker-image-${{ github.sha }}/simplebank-image.tar
+        run: docker load -i simplebank-image.tar
 
       - name: Snyk Container Scan
         run: snyk container test simplebank:${{ github.sha }} --json-file-output=snyk-container.json || true
@@ -270,6 +273,8 @@ jobs:
         with:
           name: docker-image-${{ github.sha }}
 
-      - run: docker load -i docker-image-${{ github.sha }}/simplebank-image.tar
+      - run: docker load -i simplebank-image.tar
 
-      - run: docker push rukevweubio/simplebank:${{ github.sha }}
+      - run: |
+          docker push rukevweubio/simplebank:${{ github.sha }}
+          docker push rukevweubio/simplebank:latest
