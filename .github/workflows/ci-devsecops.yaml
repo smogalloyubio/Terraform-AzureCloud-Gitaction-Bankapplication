@@ -291,7 +291,7 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - trivy-image-scan
-      - dast-scan
+      - snyk-security-scan
       - dependency-audit
       - codeql-sast
       - checkov-terraform
