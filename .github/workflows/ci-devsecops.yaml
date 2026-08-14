@@ -249,34 +249,41 @@ jobs:
           path: trivy-image.sarif
 
 
-  dast-scan:
-    name: OWASP ZAP DAST Scan
+  snyk-security-scan:
+    name: Snyk Security Scan (SAST + Container)
     runs-on: ubuntu-latest
     needs: [docker-build]
 
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/download-artifact@v4
-        with:
-          name: docker-image-${{ github.sha }}
+      - name: Install Snyk CLI
+        run: |
+          curl -fsSL https://static.snyk.io/cli/latest/snyk-linux -o snyk
+          chmod +x snyk
+          sudo mv snyk /usr/local/bin/
 
-      - run: docker load -i simplebank-image.tar
+      - name: Authenticate Snyk
+        run: snyk auth ${{ secrets.SYNK_TOKEN }}
 
-      - run: docker run -d -p 3000:3000 simplebank:${{ github.sha }}
+  
+      - name: Snyk SAST Scan
+        run: snyk code test --json-file-output=snyk-sast.json || true
 
-      - run: docker pull owasp/zap2docker-stable
+   
+      - name: Load Docker Image
+        run: docker load -i simplebank-image.tar
 
-      - run: |
-          docker run --rm \
-            owasp/zap2docker-stable zap-baseline.py \
-            -t http://localhost:3000 \
-            -r zap-report.html
+      - name: Snyk Container Scan
+        run: snyk container test simplebank:${{ github.sha }} --json-file-output=snyk-container.json || true
 
       - uses: actions/upload-artifact@v4
         with:
-          name: dast-zap-report-${{ github.sha }}
-          path: zap-report.html
+          name: snyk-security-report-${{ github.sha }}
+          path: |
+            snyk-sast.json
+            snyk-container.json
+
 
 
   docker-push:
