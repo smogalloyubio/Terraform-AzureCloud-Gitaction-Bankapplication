@@ -271,6 +271,10 @@ jobs:
       - name: Snyk SAST Scan
         run: snyk code test --json-file-output=snyk-sast.json || true
 
+      - uses: actions/download-artifact@v4
+        with:
+          name: docker-image-${{ github.sha }}
+
    
       - name: Load Docker Image
         run: docker load -i simplebank-image.tar
