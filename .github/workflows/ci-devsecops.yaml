@@ -206,7 +206,7 @@ jobs:
           name: docker-image-${{ github.sha }}
 
       - name: Load Docker Image
-        run: docker load -i docker-image-${{ github.sha }}/simplebank-image.tar
+        run: docker load -i simplebank-image.tar
 
       - uses: aquasecurity/trivy-action@master
         with:
@@ -236,7 +236,7 @@ jobs:
           sudo mv snyk /usr/local/bin/
 
       - name: Authenticate Snyk
-        run: snyk auth ${{ secrets.SNYK_TOKEN }}
+        run: snyk auth ${{ secrets.SYNK_TOKEN }}
 
       - name: Snyk SAST Scan
         run: snyk code test --json-file-output=snyk-sast.json || true
@@ -246,7 +246,7 @@ jobs:
           name: docker-image-${{ github.sha }}
 
       - name: Load Docker Image
-        run: docker load -i docker-image-${{ github.sha }}/simplebank-image.tar
+        run: docker load -i simplebank-image.tar
 
       - name: Snyk Container Scan
         run: snyk container test rukevweubio/simplebank:${{ github.sha }} --json-file-output=snyk-container.json || true
@@ -283,7 +283,7 @@ jobs:
         with:
           name: docker-image-${{ github.sha }}
 
-      - run: docker load -i docker-image-${{ github.sha }}/simplebank-image.tar
+      - run: docker load -i simplebank-image.tar
 
       - run: |
           docker push rukevweubio/simplebank:${{ github.sha }}
