@@ -1,0 +1,56 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: simplebank-dev
+  namespace: argocd
+spec:
+  project: simplebank-project
+  source:
+    repoURL: 'https://github.com/smogalloyubio/Terraform-AzureCloud-Gitaction-Bankapplication.git' 
+    targetRevision: HEAD
+    path: kustomize/overlay/dev
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: dev
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: simplebank-stage
+  namespace: argocd
+spec:
+  project: simplebank-project
+  source:
+    repoURL: 'https://github.com/smogalloyubio/Terraform-AzureCloud-Gitaction-Bankapplication.git' # UPDATE THIS
+    targetRevision: HEAD
+    path: kustomize/overlay/stage
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: stage
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: simplebank-prod
+  namespace: argocd
+spec:
+  project: simplebank-project
+  source:
+    repoURL: 'https://github.com/smogalloyubio/Terraform-AzureCloud-Gitaction-Bankapplication.git' # UPDATE THIS
+    targetRevision: HEAD
+    path: kustomize/overlay/prod
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: prod
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: true

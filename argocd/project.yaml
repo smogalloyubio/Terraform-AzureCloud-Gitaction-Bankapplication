@@ -1,0 +1,16 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: simplebank-project
+  namespace: argocd
+spec:
+  description: Project for SimpleBank multi-env deployments
+  sourceRepos:
+  - 'https://github.com/smogalloyubio/Terraform-AzureCloud-Gitaction-Bankapplication.git'
+  destinations:
+  - namespace: dev
+    server: https://kubernetes.default.svc
+  - namespace: stage
+    server: https://kubernetes.default.svc
+  - namespace: prod
+    server: https://kubernetes.default.svc
