@@ -286,5 +286,5 @@ jobs:
       - run: docker load -i simplebank-image.tar
 
       - run: |
-          docker push rukevweubio/simplebank:${{ github.sha }}
+          
           docker push rukevweubio/simplebank:latest
