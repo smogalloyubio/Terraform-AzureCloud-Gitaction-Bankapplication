@@ -16,7 +16,6 @@ spec:
     spec:
       containers:
       - name: simplebank
-        # The pipeline will replace this tag dynamically or you can use :latest
         image: simplebank:latest
         ports:
         - containerPort: 3000
