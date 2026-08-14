@@ -4,7 +4,7 @@ resources:
 - deployment.yaml
 - service.yaml
 replicas:
-- count: 3
+- count: 6
   name: simplebank-app
 images:
 - name: rukevweubio/simplebank:b752c4c73281e76f683090d8bf44abf17b904cda
